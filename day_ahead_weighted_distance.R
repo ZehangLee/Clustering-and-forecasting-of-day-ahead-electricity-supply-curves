@@ -7,9 +7,10 @@ library(mixtools)
 library(LaplacesDemon)
 library(cluster)
 library(tictoc)
+library(dendextend)
+library(dbscan)
 
-
-ffload(file="D:/Script/R_script/day_ahead market/day_ahead market")
+ffload(file="D:/Script/R_script/day_ahead market/day_ahead market/ff_archive")
 
 
 stepwise_distance_w_plot <- function(p1, q1, #prices and quantities for curve 1
@@ -90,6 +91,25 @@ stepwise_distance_w_plot <- function(p1, q1, #prices and quantities for curve 1
   return(step_dist)
 }
 
+find_index = function(m,n){
+  
+  if(m ==1){
+    index = 1:(n-1)
+  }
+  else{
+    
+    first_index= m-1
+    k = m-1
+    
+    gap = rep(n-m, k-1)
+    offset = (m-2):1
+    index1 = c(first_index, first_index + cumsum(gap + offset)) # all index of (,m)
+    
+    index2 = index1[length(index1)] + (n-m) + 1:(n-m) # all index of (m,)
+    index = c(index1, index2)
+  }
+  return(index)
+}
 
 
 n_curves= 365*24*5+24*2
@@ -172,11 +192,6 @@ saveRDS(dist,file = save_file)
 
 
 ###################################################################################
-# path = "distance/1-310"
-# dist_list310 = list.files(path=path,pattern = ".RDS",full.names = T) %>% 
-#   map(readRDS) %>%
-#   unlist(use.names = F)
-
 
 path = "D:/Script/R_script/day_ahead market/day_ahead market/dist"
 dist_list = list.files(path=path,pattern = ".RDS",full.names = T) %>% 
@@ -185,13 +200,13 @@ dist_list = list.files(path=path,pattern = ".RDS",full.names = T) %>%
 #########################################################################
 
 
-# 
-# d = dist_list
-# rm(dist_list)
-# gc()
-# 
-# d = d/264297298.395996 # Divide by sd(Quants)^2
-# d = sqrt(d) 
+
+d = dist_list
+rm(dist_list)
+gc()
+
+d = d/264297298.395996 # Divide by sd(Quants)^2
+d = sqrt(d) 
 
 # d_ff = as.ff(d)
 # ffsave(d_ff,file="D:/Script/R_script/day_ahead market/day_ahead market",add = T)
@@ -220,8 +235,8 @@ plot(density(log(result$height)))
 groups <- cutree(result, k=5)
 table(groups)
 
-plot(result)
-rect.hclust(result, k=5, border=1:5)
+plot(result,main="cluster dendrogram with 30 clusters")
+rect.hclust(result, k=30)
 
 
 require(viridis)
@@ -239,106 +254,146 @@ sapply(dend_list, plot)
 
 #############################################################################
 
-# select best number of cluster using Average Silhouette Method
-hc <- result
-
-avg_sil = function(k) {
-  cut_res = cutree(hc,k)
-  ss = silhouette(cut_res, d)
-  mean(ss[, 3])
-}
-
-k.values <- 2:15
-
-# extract avg silhouette for 2-15 clusters
-avg_sil_values <- sapply(k.values, avg_sil)
-
-plot(k.values, avg_sil_values,
-     type = "b", pch = 19, frame = FALSE, 
-     xlab = "Number of clusters K",
-     ylab = "Average Silhouettes")
+# check Nuber-of-cluster.pdf / analysis_code to see the choice of number of 
+# clusters
 
 
 
-# select best number of cluster using Within-Cluster-Sum of Squared Errors (WSS)
-
-k = 100
-cut_res = cutree(result,k)
-cluster_memb = list()
-
-for(i in 1:k){
-  cluster_memb[[i]] = unname(which(cut_res==i))
-}
+#############################################################################
 
 
-save_file = paste("D:/Script/R_script/day_ahead market/day_ahead market/memb_in_cluster/cluster_memb_k_",k,".RDS",sep = "")
-saveRDS(cluster_memb,file = save_file)
+load("day_ahead_supply_cumsum.RData")
+load("day_ahead_supply_price.RData")
 
+n_curves= 365*24*5+24*2
+tt = day_ahead_supply_price[1:n_curves,1:2]
 
+Sys.setlocale("LC_TIME", "C")
+tt$weekday = weekdays(as.Date(as.character(tt$date),format = "%d/%m/%Y"))
+tt$date = as.Date(as.character(tt$date),format = "%d/%m/%Y")
 
-## 1. find centroid  of each clusters
+rm("day_ahead_supply_cumsum")
+rm("day_ahead_supply_price")
 
-# m is the number shown in the pairs (,m) and (m,)
-# n is the size
-find_index = function(m,n){
-  
-  if(m ==1){
-    index = 1:(n-1)
-  }
-  else{
-    
-    first_index= m-1
-    k = m-1
-    
-    gap = rep(n-m, k-1)
-    offset = (m-2):1
-    index1 = c(first_index, first_index + cumsum(gap + offset)) # all index of (,m)
-    
-    index2 = index1[length(index1)] + (n-m) + 1:(n-m) # all index of (m,)
-    index = c(index1, index2)
-  }
-  return(index)
-}
+head(tt)
+
+holiday_2016 = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/holidays/2016.csv",encoding="UTF-8")[,1]
+holiday_2017 = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/holidays/2017.csv",encoding="UTF-8")[,1]
+holiday_2018 = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/holidays/2018.csv",encoding="UTF-8")[,1]
+holiday_2019 = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/holidays/2019.csv",encoding="UTF-8")[,1]
+holiday_2020 = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/holidays/2020.csv",encoding="UTF-8")[,1]
 
 
 
+holiday_2016 = paste(holiday_2016,"-2016",sep="")
+holiday_2017 = paste(holiday_2017,"-2017",sep="")
+holiday_2018 = paste(holiday_2018,"-2018",sep="")
+holiday_2019 = paste(holiday_2019,"-2019",sep="")
+holiday_2020 = paste(holiday_2020,"-2020",sep="")
 
-cluster_num = 100
-path = paste("D:/Script/R_script/day_ahead market/day_ahead market/memb_in_cluster/cluster_memb_k_",cluster_num,".RDS",sep = "")
-cluster_memb = readRDS(path)
-cluster_stat = list()
+holiday_2016 = unique(as.Date(holiday_2016,format = "%d-%b-%Y"))
+holiday_2017 = unique(as.Date(holiday_2017,format = "%d-%b-%Y"))
+holiday_2018 = unique(as.Date(holiday_2018,format = "%d-%b-%Y"))
+holiday_2019 = unique(as.Date(holiday_2019,format = "%d-%b-%Y"))
+holiday_2020 = unique(as.Date(holiday_2020,format = "%d-%b-%Y"))
 
-for(cl in 1:cluster_num){
-  memb_num= length(cluster_memb[[cl]])
-  
-  dist2neighbor = c()
-  
-  
-  for(i in 1:memb_num){
-    print(paste(cl,"-",i/memb_num))
-    index1 = cluster_memb[[cl]][i]
-    index2 = cluster_memb[[cl]][-i]
-    index2 = index2 - (index2 > index1)
-    
-    location_in_dist_m = find_index(index1, 43848)[index2]
-    dist2neighbor[i]= sum(d_ff[location_in_dist_m])
-  }
-  
-  centroid_index = which.min(dist2neighbor)
-  centroid = cluster_memb[[cl]][centroid_index]
-  WSS = dist2neighbor[centroid_index]
-  cluster_stat[[cl]]= c(centroid,WSS)
-}
+tt$holiday = ifelse(tt$date %in% c(holiday_2016,holiday_2017,holiday_2018,holiday_2019,holiday_2020), 1, 0)
+rm('holiday_2016','holiday_2017','holiday_2018','holiday_2019','holiday_2020')
 
+solarpv = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealTimeGenerationSolarPV.csv",sep = ";")
+solarpv = solarpv %>% separate(datetime,c("date","hour"),"T")
+solarpv$hour =substr(solarpv$hour,1,2)
+solarpv$hour = as.integer(solarpv$hour)
+solarpv = arrange(solarpv,date,hour)
+solarpv$date = as.Date(solarpv$date)
+solarpv = solarpv[,c("date","hour","value")]
+solarpv = solarpv %>% group_by(date) %>% mutate(ind = row_number())
+solarpv = solarpv[,-2]
 
-
-save_file = paste("D:/Script/R_script/day_ahead market/day_ahead market/cluster_stat_cl",cluster_num,".RDS",sep = "")
-saveRDS(cluster_stat,file = save_file)
+tt = as.tibble(tt)
+tt = left_join(tt,solarpv,by=c("date", "hour"="ind"))
+tt = select(tt,c("date","hour","weekday","holiday","value"))
+colnames(tt)[5] = "gen_SolarPV"
+rm(solarpv)
 
 
-stats = paste("cluster_stat_cl",c(2,seq(10,100,10)),sep = "") 
+solartherma = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealTimeGenerationSolarTherma.csv",sep = ";")
+solartherma = solartherma %>% separate(datetime,c("date","hour"),"T")
+solartherma$hour =substr(solartherma$hour,1,2)
+solartherma$hour = as.integer(solartherma$hour)
+solartherma = arrange(solartherma,date,hour)
+solartherma$date = as.Date(solartherma$date)
+solartherma = solartherma[,c("date","hour","value")]
+solartherma = solartherma %>% group_by(date) %>% mutate(ind = row_number())
+solartherma = solartherma[,-2]
 
-Total_WSS = sapply(1:length(stats), function(k)  {
-  x = get(stats[k])
-  sum(sapply(1:length(x),function(i) x[[i]][2]))})
-plot(c(2,seq(10,100,10)),Total_WSS,type = "b")
+
+tt = left_join(tt,solartherma,by=c("date", "hour"="ind"))
+colnames(tt)[6] = "gen_SolarTherma"
+rm(solartherma)
+
+
+wind = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealTimeGenerationWind.csv",sep = ";")
+wind = wind %>% separate(datetime,c("date","hour"),"T")
+wind$hour =substr(wind$hour,1,2)
+wind$hour = as.integer(wind$hour)
+wind = arrange(wind,date,hour)
+wind$date = as.Date(wind$date)
+wind = wind[,c("date","hour","value")]
+wind = wind %>% group_by(date) %>% mutate(ind = row_number())
+wind = wind[,-2]
+
+
+tt = left_join(tt,wind,by=c("date", "hour"="ind"))
+colnames(tt)[7] = "gen_Wind"
+rm(wind)
+
+
+nuclear = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealTimeGenerationNuclear.csv",sep = ";")
+nuclear = nuclear %>% separate(datetime,c("date","hour"),"T")
+nuclear$hour =substr(nuclear$hour,1,2)
+nuclear$hour = as.integer(nuclear$hour)
+nuclear = arrange(nuclear,date,hour)
+nuclear$date = as.Date(nuclear$date)
+nuclear = nuclear[,c("date","hour","value")]
+nuclear = nuclear %>% group_by(date) %>% mutate(ind = row_number())
+nuclear = nuclear[,-2]
+
+
+tt = left_join(tt,nuclear,by=c("date", "hour"="ind"))
+colnames(tt)[8] = "gen_Nuclear"
+rm(nuclear)
+
+
+demand = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealDemand.csv",sep = ";")
+demand = demand %>% separate(datetime,c("date","hour"),"T") %>% filter(name == "Real demand")
+demand$hour =substr(demand$hour,1,2)
+demand$hour = as.integer(demand$hour)
+demand = arrange(demand,date,hour)
+demand$date = as.Date(demand$date)
+demand = demand[,c("date","hour","value")]
+demand = demand %>% group_by(date) %>% mutate(ind = row_number())
+demand = demand[,-2]
+
+
+tt = left_join(tt,demand,by=c("date", "hour"="ind"))
+colnames(tt)[9] = "demand"
+rm(demand)
+
+pred_demand = read.csv("D:/Script/R_script/day_ahead market/day_ahead market/power_generation/RealDemand.csv",sep = ";")
+pred_demand = pred_demand %>% separate(datetime,c("date","hour"),"T") %>% filter(name == "Forecasted demand")
+pred_demand$hour =substr(pred_demand$hour,1,2)
+pred_demand$hour = as.integer(pred_demand$hour)
+pred_demand = arrange(pred_demand,date,hour)
+pred_demand$date = as.Date(pred_demand$date)
+pred_demand = pred_demand[,c("date","hour","value")]
+pred_demand = pred_demand %>% group_by(date) %>% mutate(ind = row_number())
+pred_demand = pred_demand[,-2]
+
+
+tt = left_join(tt,pred_demand,by=c("date", "hour"="ind"))
+colnames(tt)[10] = "pred_demand"
+rm(pred_demand)
+
+tt_gen = tt
+save(tt_gen,file = "time&generation.RData")
