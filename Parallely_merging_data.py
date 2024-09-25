@@ -9,6 +9,9 @@ import sys,os
 import pandas as pd
 from joblib import Parallel, delayed
 
+# scan CSV files in the root path
+
+
 root= 'D:/day-ahead_data/curve'
 file_list = []
 for path, subdirs, files in os.walk(root):
