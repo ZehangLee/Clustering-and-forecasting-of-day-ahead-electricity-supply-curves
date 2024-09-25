@@ -54,24 +54,18 @@ def download_esios(driver_path,
                    timeout = 50):
     
 
-    # auth_options = {
-    #     'proxy': {
-    #         'http': 'http://zliaqj:kK0gNwb6@51.91.195.142:29842', 
-    #         'https': 'https://zliaqj:kK0gNwb6@51.91.195.142:29842',
-    #         'no_proxy': 'localhost,127.0.0.1' # excludes
-    #     }
-    # }
+    
     chrome_options = Options()
     auto_allocated_download_path = auto_allocate_download_path(market, date, hour, tertiary_res_dir,download_parent_path)
     prefs = {"download.default_directory": auto_allocated_download_path, "profile.default_content_settings.popups": 0,  "directory_upgrade": True}
     chrome_options.add_experimental_option('prefs', prefs)
     
-    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
+    user_agent = 'XXXXXX'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
-    #chrome_options.add_argument("--proxy-server=http://145.40.68.155:9480")
+    
     driver = webdriver.Chrome(driver_path, options=chrome_options)
-    # driver = webdriver.Chrome(driver_path, seleniumwire_options=auth_options, options=chrome_options) #
+
     url = 'https://www.esios.ree.es/en/supply-curves'
     driver.get(url)
     time.sleep(5)
