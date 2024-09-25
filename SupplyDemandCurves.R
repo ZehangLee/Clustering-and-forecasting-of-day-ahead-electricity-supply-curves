@@ -1,3 +1,5 @@
+# Construct curves after wrapping the data
+
 library(ffbase)
 library(vroom)
 library(tidyverse)
