@@ -1,3 +1,5 @@
+# Grouping close curves into small clusters and representing multiple curves by their leader. consequently, we reduce the dimension of observations (the number of curves).
+
 # X : Data matrix N x T
 # D : Dissimilarity matrix or corresponding function
 # tau : Threshold
