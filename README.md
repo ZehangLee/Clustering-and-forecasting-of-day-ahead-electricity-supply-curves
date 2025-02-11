@@ -8,5 +8,7 @@ This joint work has been published [1]. The procedure applied to the Spanish mar
 
 **UPDATE**
 * A C++ version of the distance calculation function is incorporated
-* A package including the above function is built. Therefore, each core involved in the parallel computation could call the function as we did in the pure R context. 
+* A package including the above function is built. Therefore, each core involved in the parallel computation could call the function as we did in the pure R context.
+
+We reduce the time by magnitude, from ~160 seconds to 60 seconds, in the case of obtaining 10,000 distances. See the performance comparison and package-built procedure in *cpp code/distance_calcualtion_Rcpp_example.R*
 
