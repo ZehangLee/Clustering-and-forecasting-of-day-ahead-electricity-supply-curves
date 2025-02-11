@@ -5,3 +5,8 @@ Against this background, this article introduces a hierarchical clustering metho
 This joint work has been published [1]. The procedure applied to the Spanish market is archived and represented in the repository but without losing generalization to other markets.
 
 [1] Li, Z., Alonso, A. M., Elías, A., & Morales, J. M. (2024). Clustering and forecasting of day-ahead electricity supply curves using a market-based distance. International Journal of Electrical Power & Energy Systems, 158, 109977. https://doi.org/https://doi.org/10.1016/j.ijepes.2024.109977
+
+**UPDATE**
+* A C++ version of the distance calculation function is incorporated
+* A package including the above function is built. Therefore, each core involved in the parallel computation could call the function as we did in the pure R context. 
+
